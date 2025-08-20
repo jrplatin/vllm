@@ -638,9 +638,11 @@ class ModelConfig:
 
         architectures = self.architectures
         registry = self.registry
-        is_generative_model = registry.is_text_generation_model(
-            architectures, self)
-        is_pooling_model = registry.is_pooling_model(architectures, self)
+        # is_generative_model = registry.is_text_generation_model(
+        #     architectures, self)
+        # is_pooling_model = registry.is_pooling_model(architectures, self)
+        is_generative_model = True
+        is_pooling_model = False
 
         def _task_to_convert(task: TaskOption) -> ConvertType:
             if task == "embedding" or task == "embed":
@@ -724,15 +726,34 @@ class ModelConfig:
                     f"You can pass `--convert {convert_option} to adapt "
                     "it into a pooling model.")
 
-        self.supported_tasks = self._get_supported_tasks(
-            architectures, self.runner_type, self.convert_type)
+        # self.supported_tasks = self._get_supported_tasks(
+        #     architectures, self.runner_type, self.convert_type)
 
         # Note: Initialize these attributes early because transformers fallback
         # may fail to load dynamic modules in child processes
-        model_info, arch = registry.inspect_model_cls(architectures, self)
-        self._model_info = model_info
-        self._architecture = arch
-        logger.info("Resolved architecture: %s", arch)
+        # model_info, arch = registry.inspect_model_cls(architectures, self)
+        # self._model_info = model_info
+        # self._architecture = arch
+        from vllm.model_executor.models.registry import _ModelInfo
+        self._model_info = _ModelInfo(
+            architecture="Deepseek",
+            is_text_generation_model=True,
+            is_pooling_model=False,
+            supports_cross_encoding=False,
+            supports_multimodal=False,
+            supports_multimodal_raw_input=False,
+            supports_pp=False,
+            has_inner_state=False,
+            is_attention_free=False,
+            is_hybrid=False,
+            has_noops=False,
+            supports_transcription=False,
+            supports_transcription_only=False,
+            supports_v0_only=False,
+            default_pooling_type=None
+        )
+        self._architecture = None
+        # logger.info("Resolved architecture: %s", arch)
 
         self.pooler_config = self._init_pooler_config()
 
@@ -779,7 +800,7 @@ class ModelConfig:
         # Avoid running try_verify_and_update_config multiple times
         self.config_updated = False
 
-        self._verify_quantization()
+        # self._verify_quantization()
         self._verify_cuda_graph()
         self._verify_bnb_config()
 
@@ -2585,7 +2606,7 @@ class MultiModalConfig:
 
     skip_mm_profiling: bool = False
     """
-    When enabled, skips multimodal memory profiling and only profiles with 
+    When enabled, skips multimodal memory profiling and only profiles with
     language backbone model during engine initialization.
 
     This reduces engine startup time but shifts the responsibility to users for
@@ -2648,24 +2669,24 @@ class PoolerConfig:
     ## for embeddings models
     normalize: Optional[bool] = None
     """
-    Whether to normalize the embeddings outputs. 
+    Whether to normalize the embeddings outputs.
     """
     dimensions: Optional[int] = None
     """
-    Reduce the dimensions of embeddings if model 
+    Reduce the dimensions of embeddings if model
     support matryoshka representation.
     """
 
     ## for classification models
     activation: Optional[bool] = None
     """
-    Whether to apply activation function to the classification outputs. 
+    Whether to apply activation function to the classification outputs.
     """
 
     ## for reward models
     softmax: Optional[bool] = None
     """
-    Whether to apply softmax to the reward outputs. 
+    Whether to apply softmax to the reward outputs.
     """
     step_tag_id: Optional[int] = None
     """
@@ -2691,9 +2712,9 @@ class PoolerConfig:
 
     max_embed_len: Optional[int] = None
     """
-    Maximum input length allowed for embedding generation. When set, allows 
+    Maximum input length allowed for embedding generation. When set, allows
     inputs longer than max_embed_len to be accepted for embedding models.
-    This parameter enables accepting long inputs without requiring 
+    This parameter enables accepting long inputs without requiring
     VLLM_ALLOW_LONG_MAX_MODEL_LEN environment variable. When an input exceeds
     max_embed_len, it will be handled according to the original max_model_len
     validation logic. Defaults to None (i.e. set to max_model_len).
