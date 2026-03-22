@@ -403,7 +403,7 @@ class Qwen3NextGatedDeltaNet(nn.Module, MambaBase):
         prefix: str = "",
     ) -> None:
         super().__init__()
-        self.tp_size = get_tensor_model_parallel_world_size()
+        self.tp_size = get_current_vllm_config().parallel_config.tensor_parallel_size
         self.tp_rank = get_tensor_model_parallel_rank()
         self.hidden_size = config.hidden_size
         self.num_v_heads = config.linear_num_value_heads
@@ -501,7 +501,6 @@ class Qwen3NextGatedDeltaNet(nn.Module, MambaBase):
             eps=self.layer_norm_epsilon,
             group_size=None,
             norm_before_gate=True,
-            device=current_platform.current_device(),
         )
 
         self.out_proj = RowParallelLinear(
